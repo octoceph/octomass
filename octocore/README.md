@@ -1,32 +1,30 @@
-# OctoCore — fork of Videomass (alpha)
+# OctoCore — fork of Videomass (alpha) with Audio DSP
 
 Этот репозиторий — форк проекта **Videomass**, расширённый для задач OctoCore:
 мультикамерного захвата, локальной и облачной ИИ-аналитики, интеграции с IPFS/Helia/Filecoin,
-а также поддержки сенсоров (MQTT/Modbus/Serial) и прокси для IP-камер.
+поддержки сенсоров (MQTT/Modbus/Serial) и — дополнительно — полноценного аудио-движка (DSP + ML).
 
 > ВНИМАНИЕ: это рабочий прототип («skeleton») — предназначен для локальной разработки и PoC.
-> Лицензия: GPL-3.0-or-later (как у оригинального Videomass). 
+> Лицензия: GPL-3.0-or-later (как у оригинального Videomass).
 
 ## Что включено в этот форк
-- FastAPI сервер с эндпойнтами для приёма кадров, snapshot RTSP и pin в IPFS.
+- FastAPI сервер с эндпойнтами для приёма кадров, snapshot RTSP, загрузки и анализа аудио.
 - Модули для работы с веб-камерами (OpenCV) и IP-камерами (ffmpeg snapshot).
-- Простая интеграция с IPFS (ipfshttpclient / Infura fallback).
-- Шим для Filecoin (Powergate/Estuary) — пример вызова.
+- Audio engine: DSP (librosa), эвристики, hooks для TF/PyTorch/ONNX inference.
+- Простая интеграция с IPFS (ipfshttpclient / Infura fallback) и Filecoin shim.
 - Сенсоры: MQTT, Modbus, Serial (каркас).
-- Utility: ffmpeg helper, onnx runtime helper.
-- Docker compose для быстрого локального запуска.
+- Dockerfile и docker-compose для локального запуска.
 
 ## Быстрый старт (локально)
 1. Скопируйте `.env.example` в `.env` и заполните переменные (INFURA_PROJECT_ID и т.д.), если планируете использовать IPFS/Powergate.
-2. Установите зависимости:
-   * Рекомендуется использовать `poetry`:
-     ```bash
-     poetry install
-     ```
-   * Или стандартный pip:
-     ```bash
-     pip install -e .
-     ```
+2. Установите зависимости (рекомендуется poetry):
+   ```bash
+   poetry install
+   ```
+   Или pip:
+   ```bash
+   pip install -e .
+   ```
 3. Запустите сервер разработки:
    ```bash
    uvicorn octocore.server:app --reload --port 8000
@@ -40,19 +38,15 @@
      ```
      POST /api/v1/frames (multipart: file, metadata)
      ```
+   * Upload audio and analyze:
+     ```
+     POST /api/v1/audio (multipart: file, metadata)  # returns analysis (or queued)
+     ```
 
-## Архитектура (кратко)
-Проект делится на модули:
-- `cameras/` — webcam, ip_camera, discovery
-- `sensors/` — mqtt_sensor, modbus_sensor, serial_sensor
-- `storage/` — ipfs_client, filecoin shim
-- `ai/` — примеры onnx inference, mobilenet demo
-- `server.py` — FastAPI точки входа для ingest/pin/archive
+## Audio engine (DSP + ML)
+Папка `src/octocore/audio/` содержит модули:
+- `dsp.py` — загрузка аудио, melspec, mfcc, spectrogram, детекция событий по энергии.
+- `ml_models.py` — адаптеры для TF/Torch/ONNX моделирования.
+- `ingest.py` — pipeline обработки аудио, сохранение результатов и опциональный upload в IPFS.
 
-Подробная архитектура и ADR находятся в репозитории (ADR был сгенерирован отдельно).
-
-## Цели форка и стратегия сообщества
-- Поддерживать совместимость с пресетами Videomass.
-- Давать путь миграции существующим пользователям Videomass.
-- Привлечь OSS-сообщество: оформить CONTRIBUTING, хорошие первые задачи, CI.
-- Модель монетизации: open-core + SaaS (Filecoin-as-a-Service, managed GPU inference).
+Примеры использования в `server.py` — endpoint `/api/v1/audio`.
