@@ -56,7 +56,3 @@
 - Давать путь миграции существующим пользователям Videomass.
 - Привлечь OSS-сообщество: оформить CONTRIBUTING, хорошие первые задачи, CI.
 - Модель монетизации: open-core + SaaS (Filecoin-as-a-Service, managed GPU inference).
-
-## Дальше
-- Я могу сгенерировать OpenAPI spec, CI workflow и релизный pipeline.
-- Могу подготовить руководства по развёртыванию Powergate / Estuary / MinIO.
